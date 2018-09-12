@@ -1,0 +1,155 @@
+
+
+
+# function validate_input() takes a string and returns 0 if invalid, 1 if valid
+def validate_input(x):
+    #if input is not an integer, return invalid
+    if (x.isdigit() == 0):
+        return 0
+    #cast input to int
+    x = (int)(x)
+    #if int input is out of range, return invalid
+    if (x < 2) or (x > 25):
+        return 0
+    #if this point is reached, return valid
+    return 1
+
+# function build_pyramid() takes an int k, and initializes the data structure for a pyramid of k levels
+def build_pyramid(k):
+    #refer to the global node list in this function
+    global node
+    #append the node list according to the number of levels, initializing everything to zero
+    print("number of levels: %i" % k)
+    #(k * (k-1)) /2 gives us the last node of the last level, which is also the total number of nodes in the pyramid
+    num_nodes = (int)((k * (k+1)) / 2)
+    print("number of nodes: %i" % num_nodes)
+    for x in range(1, num_nodes+1):
+        node.append([0, 0, 0, 0, 0])
+
+    #initialize node 1 as a special case, the only node on the first level
+    node[1] = [0, 0, 0, 2, 3]
+    this_nodenum = 1
+    print("[1] ", end="")
+    print("UL=%i," % node[this_nodenum][1], end="")
+    print("UR=%i," % node[this_nodenum][2], end="")
+    print("LL=%i," % node[this_nodenum][3], end="")
+    print("LR=%i," % node[this_nodenum][4], end="")
+    print("")
+
+    #for each level (l) of the pyramid excluding the first and last levels, do the following
+    for l in range(2, k):
+        #for each node (n) on this level, do the following
+        #Note that each level has the same number of nodes as the level number l
+        for n in range(1, l+1):
+            #find this node's number. (k*(k+1)) / 2 tells us the number of the last node on each level (k levels).
+            #At this point, the current level is denoted as l.
+            #so (l-n) is the current distance from end of level (l) to the current node (n).
+            #Therefore, subtracting (l-n) from the number of the last node on the level gives us the number
+            #    of our current node.
+            this_nodenum = ((l*(l+1))/2) - (l-n)
+            this_nodenum = (int)(this_nodenum)
+            print("[%i] " % this_nodenum, end="")
+            #if this is the first node of a row, do the following
+            if (n == 1):
+                #there will never be an Upper Left node connection
+                node[this_nodenum][1] = 0
+                print("UL=%i," % node[this_nodenum][1], end="")
+                #Upper right connection will always be the first node of the level above
+                node[this_nodenum][2] = (int)(((l-1)*(l/2)) - (l-1-n))
+                print("UR=%i," % node[this_nodenum][2], end="")
+                #lower left connection will always be the first node of the level below
+                node[this_nodenum][3] = (int)(((l+1)*(l+2)/2) - (l+1-n))
+                print("LL=%i," % node[this_nodenum][3], end="")
+                #lower right connection will always be the second node of the level below,
+                #which is also simply the lower left connection we just found + 1
+                node[this_nodenum][4] = node[this_nodenum][3] + 1
+                print("LR=%i," % node[this_nodenum][4], end="")
+            #if this is the last node of a row, do the following
+            elif (this_nodenum == ((l*(l+1))/2)):
+                #upper left connection is always the last node of the previous row
+                node[this_nodenum][1] = (int)(((l - 1) * (l / 2)))
+                print("UL=%i," % node[this_nodenum][1], end="")
+                #there will never be an Upper Right node connection
+                node[this_nodenum][2] = 0
+                print("UR=%i," % node[this_nodenum][2], end="")
+                #lower right connection will always be the last node of the level below
+                node[this_nodenum][4] = (int)(((l + 1) * (l + 2) / 2))
+                #lower left connection will always be the second to last node of the level below
+                #which is also the same as the lower right connection - 1
+                node[this_nodenum][3] = node[this_nodenum][4] - 1
+                print("LL=%i," % node[this_nodenum][3], end="")
+                print("LR=%i," % node[this_nodenum][4], end="")
+            #else this is a center node, not on the top or bottom levels, and therefore has all 4 connections
+            else:
+                #upper left connection is the upper right connection of the previous node on the list
+                node[this_nodenum][1] = node[this_nodenum-1][2]
+                print("UL=%i," % node[this_nodenum][1], end="")
+                #upper right connection is the upper left connection plus 1
+                node[this_nodenum][2] = node[this_nodenum][1] + 1
+                print("UR=%i," % node[this_nodenum][2], end="")
+                #lower left connection is the lower right connection of the previous node on this level
+                node[this_nodenum][3] = node[this_nodenum-1][4]
+                print("LL=%i," % node[this_nodenum][3], end="")
+                #lower right connection is the lower left connection plus 1
+                node[this_nodenum][4] = node[this_nodenum][3] + 1
+                print("LR=%i," % node[this_nodenum][4], end="")
+        print("")
+
+    #initialize the lowest level as a special case
+    #for each node in the last level, do the following
+    #starting from the first node in the lowest level
+    this_nodenum = (int)((k * (k + 1)) / 2 - (k - 1))
+    for n in range(1, k+1):
+        # there will never be any lower connections on the lowest level of the pyramid
+        print("[%i] " % this_nodenum, end="")
+        node[this_nodenum][3] = 0
+        node[this_nodenum][4] = 0
+        #if this is the first node in the lowest level
+        if (n == 1):
+            #there will never be an Upper Left node connection for the leftmost node
+            node[this_nodenum][1] = 0
+            print("UL=%i," % node[this_nodenum][1], end="")
+            #Upper right connection will always be the first node of the level above
+            node[this_nodenum][2] = (int)(((k - 1) * (k / 2)) - (k - 1 - n))
+            print("UR=%i," % node[this_nodenum][2], end="")
+        #if this is the rightmost node on the lowest level
+        elif (n == k):
+            #the last node on the level will never have an upper right connection
+            node[this_nodenum][2] = 0
+            #upper left connection is always the last node of the previous row
+            node[this_nodenum][1] = (int)(((k - 1) * (k / 2)))
+            print("UL=%i," % node[this_nodenum][1], end="")
+            #else this is a central node in the lowest level
+        else:
+            #upper left connection is the upper right connection of the previous node on the list
+            node[this_nodenum][1] = node[this_nodenum - 1][2]
+            print("UL=%i," % node[this_nodenum][1], end="")
+            #upper right connection is the upper left connection plus 1
+            node[this_nodenum][2] = node[this_nodenum][1] + 1
+            print("UR=%i," % node[this_nodenum][2], end="")
+
+        #increment the node number
+        this_nodenum += 1
+
+# GLOBAL VARIABLES
+#node[] is a list of lists. node[0] is unused. node[1] represents node 1 in our pyramid.
+#node[1] = [0, 0, 0, 2, 3]. Each node list contains 4 pieces of information:
+#[# hits, Upper Left node (0 if non-existing), Upper Right, Lower Left, Lower Right
+node = [[]]
+
+#initialize variables
+num_levels = 0
+input_valid = 0
+
+#get initial user input
+num_levels = input("Enter number of pyramid levels [2-25]: ")
+
+#continue taking input until valid input is received
+while (validate_input(num_levels) == 0):
+    num_levels = input("Invalid input. Enter number of pyramid levels [2-25]: ")
+
+#cast validated input to int
+num_levels = (int)(num_levels)
+
+#build the pyramid based on number of levels input by the user
+build_pyramid(num_levels)
