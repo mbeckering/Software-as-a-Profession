@@ -31,14 +31,6 @@ External Files:
     L T
     L T
 
-    HW2beckeringOutfile.txt
-    This output file receives all of the same info that is printed on screen:
-    Brief explanation of how the pyramid game works, summary of statistics
-    from each game, and a summary of statistics from all games as a whole.
-    Output file also receives individual node visits even if the user
-    chooses not to display them to screen output during the program run.
-    This file is created or overwritten each time the program is run.
-
 About:
 
            PYRAMID GAME
