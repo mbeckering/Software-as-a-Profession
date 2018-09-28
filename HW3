@@ -1,0 +1,600 @@
+'''
+Author:
+    Michael Beckering
+    Project Created: 9/27/18 (Adapted from BeckeringHW3.py)
+    Due Date: 10/1/18
+    FS18-CS4500-E01 - Introduction to the Software Profession
+    Homework 4
+
+Environment:
+    Python 3.7.0 (v3.7.0:1bf9cc5093, Jun 27 2018, 04:59:51) [MSC v.1914 64 bit (AMD64)]
+    PyCharm 2018.2.2 (Community Edition)
+    Build #PC-182.4129.34, built on August 21, 2018
+    JRE: 1.8.0_152-release-1248-b8 amd64
+    JVM: OpenJDK 64-Bit Server VM by JetBrains s.r.o
+    Windows 10 10.0
+
+Sources used during development:
+    In-class lecture
+    Turtle Graphics documentation: https://docs.python.org/3.3/library/turtle.html?highlight=turtle
+
+External Files:
+    HWinfile.txt
+    This input file should be placed the the same directory as the program.
+    It should contain four rows, each containing two integers separated
+    by a blank space. Call these integers L and T. L represents the
+    number of levels in the pyramid, (2-25 inclusive) and T represents the
+    number of times to run that simulation (10-50 inclusive). The format of
+    the input file would thusly appear as such:
+    L T
+    L T
+    L T
+    L T
+
+    HW2beckeringOutfile.txt
+    This output file receives all of the same info that is printed on screen:
+    Brief explanation of how the pyramid game works, summary of statistics
+    from each game, and a summary of statistics from all games as a whole.
+    Output file also receives individual node visits even if the user
+    chooses not to display them to screen output during the program run.
+    This file is created or overwritten each time the program is run.
+
+About:
+
+           PYRAMID GAME
+
+               [1]
+            [2]  [3]
+         [4]  [5]  [6]
+      [7]  [8]  [9]  [10]
+   [11] [12] [13] [14] [15]
+[16] [17] [18] [19] [20] [21]
+
+This game begins with a visual traversal of the pyramid pictured above.
+
+We start at [1], mark it as visited (hit),
+and roll a 4-sided die [1-4]
+1: Upper Left (UL)
+2: Upper Right (UR)
+3: Lower Left (LL)
+4: Lower Right (LR)
+
+This die roll determines the direction to make our first move. If we roll a 1 (UL) or 2 (UR)
+on our first roll while sitting at node [1], as there is no node to move to in those directions,
+we count this as a "move", but we stay at node [1] and mark it as visited (hit) for a second time.
+If we roll a 3 (LL), we will move to node [2], mark it as hit, and roll the die again.
+
+This process continues until each node has been hit at least once. You will see each node displayed
+on the screen in the order they are visited, followed by some statistics when the game has ended.
+
+After the visual portion is complete, close the visual window to continue the program. Next, the
+program will read the input file (info above) and perform 4 more rounds of pyramid simulations
+based on the information in the input file, and output four sets of numbers:
+
+(L1, T1, M1, D1), (L2, T2, M2, D2), (L3, T3, M3, D3) and (L4, T4, M4, D4)
+
+where :
+L1 = # levels in the pyramid for round 1
+T1 = # of times to repeat the simulation for round 1
+M1 = Average # of moves required to complete T1 simulations for round 1
+D1 = Maximum number of "hits" on a single node during T1 simulations for round 1
+...and so on for rounds 2, 3, and 4.
+
+In a pyramid of of k levels, we will call the highest level: level 1.
+On each level k, there are always k nodes. The last node on each level can be found using this formula:
+( k * (k+1) ) / 2
+It can be altered (k = k-1) to find the last node of the previous level. Subtracting (k-1) from the formula gives
+us the first node of level k, and so on. This formula is used extensively in the function build_pyramid() to
+dynamically generate the data structure node[] which holds a list of ints used to point to each node's adjacent
+connections.
+'''
+
+import random  # used to roll our 4-sided die to determine what direction to move
+import turtle  # used for creating a visualization of the first pyramid game as it occurs
+
+# FUNCTION DEFINITIONS
+
+# function build_pyramid(int k) takes an int k, and initializes the data structure for a pyramid of k levels
+def build_pyramid(k):
+    # refer to these globals in this function
+    global node
+    global num_nodes
+    node = [[]]  # reset the node list (added due to building multiple varied pyramids in a single run)
+    # append the node list according to the number of levels, initializing everything to zero
+    # (k * (k-1)) /2 gives us the last node of the last level, which is also the total number of nodes in the pyramid
+    num_nodes = (int)((k * (k+1)) / 2)
+    for x in range(1, num_nodes+1):
+        node.append([0, 0, 0, 0, 0])
+
+    # initialize node 1 as a special case, the only node on the first level
+    node[1] = [0, 0, 0, 2, 3]
+
+    # for each level (l) of the pyramid excluding the first and last levels, do the following
+    # k is the number of levels, the parameter of this function
+    for l in range(2, k):
+        # for each node (n) on this level, do the following
+        # Note that each level has the same number of nodes as the level number l
+        for n in range(1, l+1):
+            # find this node's number. (k*(k+1)) / 2 tells us the number of the last node on each level (k levels).
+            # At this point, the current level is denoted as l.
+            # so (l-n) is the current distance from end of level (l) to the current node (n).
+            # Therefore, subtracting (l-n) from the number of the last node on the level gives us the number
+            # of our current node.
+            this_nodenum = ((l*(l+1))/2) - (l-n)
+            this_nodenum = (int)(this_nodenum)
+            # if this is the first node of a row, do the following
+            if (n == 1):
+                # there will never be an Upper Left node connection
+                node[this_nodenum][1] = 0
+                # Upper right connection will always be the first node of the level above
+                node[this_nodenum][2] = (int)(((l-1)*(l/2)) - (l-1-n))
+                # lower left connection will always be the first node of the level below
+                node[this_nodenum][3] = (int)(((l+1)*(l+2)/2) - (l+1-n))
+                # lower right connection will always be the second node of the level below,
+                # which is also simply the lower left connection we just found + 1
+                node[this_nodenum][4] = node[this_nodenum][3] + 1
+            # if this is the last node of a row, do the following
+            elif (this_nodenum == ((l*(l+1))/2)):
+                # upper left connection is always the last node of the previous row
+                node[this_nodenum][1] = (int)(((l - 1) * (l / 2)))
+                # there will never be an Upper Right node connection
+                node[this_nodenum][2] = 0
+                # lower right connection will always be the last node of the level below
+                node[this_nodenum][4] = (int)(((l + 1) * (l + 2) / 2))
+                # lower left connection will always be the second to last node of the level below
+                # which is also the same as the lower right connection - 1
+                node[this_nodenum][3] = node[this_nodenum][4] - 1
+            # else this is a center node, not on the top or bottom levels, and therefore has all 4 connections
+            else:
+                # upper left connection is the upper right connection of the previous node on this level
+                node[this_nodenum][1] = node[this_nodenum-1][2]
+                # upper right connection is the upper left connection plus 1
+                node[this_nodenum][2] = node[this_nodenum][1] + 1
+                # lower left connection is the lower right connection of the previous node on this level
+                node[this_nodenum][3] = node[this_nodenum-1][4]
+                # lower right connection is the lower left connection plus 1
+                node[this_nodenum][4] = node[this_nodenum][3] + 1
+
+    # initialize the lowest level as a special case
+    # for each node in the last level, do the following
+    # starting from the first node in the lowest level
+    this_nodenum = (int)((k * (k + 1)) / 2 - (k - 1))
+    for n in range(1, k+1):
+        # there will never be any lower connections on the lowest level of the pyramid
+        node[this_nodenum][3] = 0
+        node[this_nodenum][4] = 0
+        # if this is the first node in the lowest level
+        if (n == 1):
+            # there will never be an Upper Left node connection for the leftmost node
+            node[this_nodenum][1] = 0
+            # Upper right connection will always be the first node of the level above
+            node[this_nodenum][2] = (int)(((k - 1) * (k / 2)) - (k - 1 - n))
+        # if this is the rightmost node on the lowest level
+        elif (n == k):
+            # the last node on the level will never have an upper right connection
+            node[this_nodenum][2] = 0
+            # upper left connection is always the last node of the previous row
+            node[this_nodenum][1] = (int)(((k - 1) * (k / 2)))
+            # else this is a central node in the lowest level
+        else:
+            # upper left connection is the upper right connection of the previous node on the list
+            node[this_nodenum][1] = node[this_nodenum - 1][2]
+            # upper right connection is the upper left connection plus 1
+            node[this_nodenum][2] = node[this_nodenum][1] + 1
+        # increment the node number
+        this_nodenum += 1
+
+# function visitNode(int n) accepts a node number, marks it as visited, and updates global variables accordingly
+def visitNode(n):
+    # refer to these global variables inside this function
+    global current_node
+    global node
+    global move_count
+    global show_output
+
+    # update the current node global variable
+    current_node = n
+    # increment the number of hits on this node
+    node[n][0] += 1
+    # increment total number of moves in the game
+    move_count += 1
+
+# findAdjacentNode(int n) accepts an int (current node) and rolls to find an adjacent node
+# returns the number of a valid adjacent node, or returns 0 if an invalid direction is rolled
+def findAdjacentNode(n):
+    # roll from 1-4 (1 = UL, 2 = UR, 3 = LL, 4 = LR)
+    roll = random.randint(1, 4)
+    # if the roll does not return an invalid move (invalid moves are 0 in our node list)
+    if (node[n][roll] != 0):
+        # return the node number that we will visit next
+        return node[n][roll]
+    # if it is an invalid node, count it as a visit to this node again
+    else:
+        visitNode(n)
+        return 0
+
+# gameOver(int n) takes the number of nodes in this pyramid, returns 1 if the game has ended (all nodes have been
+# visited at least once), else 0
+def gameOver(n):
+    # refer to the node global variable inside this function
+    global node
+    x = 1  # iterator
+    # check each node
+    while(x <= n):
+        # if any node is unvisited, return 0 (game not over)
+        if (node[x][0] == 0):
+            return 0
+        x += 1
+
+    # if this point is reached, all nodes have been visited
+    return 1
+
+# printInfo() prints a game description to stdout and to the output file
+def printInfo():
+    print("PYRAMID GAME:")
+    print("Picture a pyramid of numbers 1 through 21, 1 at the top, 2 and 3 in the second row,")
+    print("4 through 6 in the third row, and so on, with 16 through 21 in the bottom row.")
+    print("We will start at [1] at the top and move in a random direction to an adjacent node")
+    print("on the pyramid. If we attempt to move outside the pyramid, we will count that as")
+    print("another visit (hit) to the node we're currently on, then try to move again.")
+    print("The game is over when all nodes have been hit at least once.\n")
+    print("This version of the game will display a 21-node pyramid using python's turtle library.")
+    print("Afterward, it will read 4 lines of input from HWinfile.txt and then run four sets of")
+    print("simulations based on the input provided. Following those simulations will be a")
+    print("table of statistics describing each set of runs.")
+    print("Let's begin!")
+
+# compile_game_stats() calculates and saves statistics from the most recent SINGLE game
+def compile_game_stats():
+    # refer to these global variables inside this function
+    global node
+    global move_count
+    global totals_move_count
+    global totals_max_hits
+    # number of moves is truly one fewer than the number of dots, so correct that here by decrementing by 1
+    move_count -= 1
+
+    # this loop finds the node or nodes with the most hits
+    x = 1 #  iterator
+    max_hits = 0
+    while(x <= num_nodes):
+        # update max node if current node has more than previous max
+        if (node[x][0] > max_hits):
+            max_hits = node[x][0]
+        x += 1
+
+    # append total stats lists with new stats from this game
+    totals_move_count.append(move_count)
+    totals_max_hits.append(max_hits)
+
+# function report_total_stats() reports statistics from the total stats gathered for all game simulations
+def report_total_stats():
+    global L
+    global T
+    global M
+    global D
+    global input_text
+    print("Levels | Simulations | Average # of Moves | Max Hits on a Single Node")
+    print("---------------------------------------------------------------------")
+    for x in range(1, 5):
+        print("  %02i   |     %02i      |" % (L[x], T[x]), end="")
+        str = "%.02f" % M[x]
+        print(str.center(20, " "), end="")
+        print("|", end="")
+        print("          %i" % D[x])
+
+# function reset_stats() resets the necessary variables to start a fresh group of game simulations
+def reset_stats():
+    global totals_move_count
+    global totals_max_hits
+    global move_count
+    totals_move_count = []
+    totals_max_hits = []
+    move_count = 0
+
+'''function draw_circle takes 4 parameters:
+x and y are cartesian coordinates for the starting location of the circle
+c is the color of the circle to be drawn
+f indicates whether to fill the circle. if f=1, fill the circle.
+f = 2 is a special case to display a darkened circle for the game legend.'''
+def draw_circle(x, y, c, f):
+    global myTurtle
+    global node
+    global current_node
+    myTurtle.penup()
+    myTurtle.setposition(x, y)
+    myTurtle.color(c)
+    myTurtle.pendown()
+    if f == 1 or f == 2:
+        myTurtle.begin_fill()
+    myTurtle.circle(10)
+    if f == 1:
+        myTurtle.color(node[current_node][7], node[current_node][7], node[current_node][7])
+        myTurtle.end_fill()
+    if f == 2:
+        myTurtle.color(70, 70, 70)
+        myTurtle.end_fill()
+    myTurtle.penup()
+
+# function set_node_coords adds coordinate data to each node's list in the global node[] list
+# in order for the draw_circle() function to know where on-screen to update the visual effects
+# as the game proceeds
+def set_node_coords():
+    global node
+    global shade
+    node[1].append(0)
+    node[1].append(0)
+    node[2].append(-15)
+    node[2].append(-20)
+    node[3].append(15)
+    node[3].append(-20)
+    node[4].append(-30)
+    node[4].append(-40)
+    node[5].append(0)
+    node[5].append(-40)
+    node[6].append(30)
+    node[6].append(-40)
+    node[7].append(-45)
+    node[7].append(-60)
+    node[8].append(-15)
+    node[8].append(-60)
+    node[9].append(15)
+    node[9].append(-60)
+    node[10].append(45)
+    node[10].append(-60)
+
+    #for the last 2 rows, it's a bit more efficient to assign coordinates using loops
+    x = -60  # x-coordinate starting position
+    for i in range(11, 16):
+        y = -80  # all nodes on this level are at the same y-coordinate
+        node[i].append(x)
+        node[i].append(y)
+        x += 30  # increment x coordinate by 30 for the next node
+
+    x = -75  # x-coordinate starting position
+    for i in range(16, 22):
+        y = -100  # all nodes on this level are at the same y-coordinate
+        node[i].append(x)
+        node[i].append(y)
+        x += 30  # increment x coordinate by 30 for the next node
+
+    #  this last loops adds a shader value for each node that will get darker each time the node is hit
+    for i in range(1, 22):
+        node[i].append(shade)
+
+
+### GLOBAL VARIABLES ###
+
+# node[] is a list of lists. node[0] is unused. node[1] represents node 1 in our pyramid.
+# node[1] = [0, 0, 0, 2, 3]. Each node list contains 4 pieces of information:
+# [# hits, Upper Left node (0 if non-existing), Upper Right, Lower Left, Lower Right
+
+
+node = [[]]
+show_output = 0  # print node visits to screen if 1
+game_number = 0  # what iteration of the game we're on
+num_nodes = 0  # number of nodes in this pyramid
+next_node = 0  # for the current game only
+current_node = 0  # for the current game only
+move_count = 0  # for the current game only
+totals_move_count = [0]  # list of move counts for each game. totals_move_count[1] will be appended for game 1.
+totals_max_hits = [0]  # list of the highest # of hits on a node for each game. Appended like totals_move_count.
+num_sims = 0  # number of times to run the simulation, provided by user below
+shade = 250  # RGB value, increases (gets darker) for each node as it is hit more often
+M = [0, 0, 0, 0, 0]  # stat totals for 4 groups of simulations
+D = [0, 0, 0, 0, 0]
+L = [0, 0, 0, 0, 0]
+T = [0, 0, 0, 0, 0]
+
+### MAIN PROGRAM ###
+
+printInfo()  # print instructions and information about the pyramid game
+
+### PYRAMID DISPLAY SECTION ###
+
+# build our pyramid for the display portion of the program with 6 levels (21 nodes)
+build_pyramid(6)
+set_node_coords()
+
+# object for drawing the pyramid border structure
+myBorder = turtle.Turtle()
+myBorder.hideturtle()
+myBorder.speed(0)
+myBorder.width(3)
+
+# draw the pyramid border
+myBorder.penup()
+myBorder.setposition(0, 40)
+myBorder.pendown()
+myBorder.right(53)
+myBorder.forward(185)
+myBorder.right(127)
+myBorder.begin_fill()
+myBorder.forward(224)
+myBorder.left(90)
+myBorder.forward(30)
+myBorder.left(90)
+myBorder.forward(224)
+myBorder.left(90)
+myBorder.forward(30)
+myBorder.end_fill()
+myBorder.left(90)
+myBorder.forward(224)
+myBorder.right(127)
+myBorder.forward(185)
+myBorder.penup()
+
+# object for drawing the game pieces
+myTurtle = turtle.Turtle()
+myTurtle.hideturtle()
+myTurtle.speed(0)
+myTurtle.width(2)
+turtle.colormode(255)
+
+# Display a legend & title for our game
+myTurtle.penup()
+myTurtle.setposition(-65, 65)
+myTurtle.color("red")
+myTurtle.write("PYRAMID", font=("Arial", 22, "bold"))
+myTurtle.penup()
+draw_circle(-300, 0, "green", 0)
+myTurtle.setposition(-280, 0)
+myTurtle.color("black")
+myTurtle.write("Unvisited Node", font=("Arial", 13, "normal"))
+draw_circle(-300, -30, "red", 0)
+myTurtle.setposition(-280, -30)
+myTurtle.color("black")
+myTurtle.write("Current Node", font=("Arial", 13, "normal"))
+draw_circle(-300, -60, "black", 0)
+myTurtle.setposition(-280, -60)
+myTurtle.write("Lightly Visited Node", font=("Arial", 13, "normal"))
+draw_circle(-300, -90, "black", 2)
+myTurtle.setposition(-280, -90)
+myTurtle.color("black")
+myTurtle.write("Heavily Visited Node", font=("Arial", 13, "normal"))
+
+# draw the blank game board, nodes yet to be hit are green
+for i in range(1, 22):
+    draw_circle(node[i][5], node[i][6], "green", 0)
+
+# set and visit node number 1
+next_node = 1
+visitNode(next_node)
+# indicate our current point with a red circle and fill the circle to indicate it has been visited
+draw_circle(node[next_node][5], node[next_node][6], "red", 1)
+last_node = current_node
+
+# Main loop for this display-oriented game. Check if the game has ended at the start.
+while not(gameOver(num_nodes)):
+    # set next_node to zero in order to enter the while loop
+    next_node = 0
+    # keep trying to roll for a valid adjacent node to visit until one is found
+    while (next_node == 0):
+        last_node = current_node  # store this so we can turn the previous red circle to black
+        # If the shader of the current node isn't already max darkness, darken it and re-draw.
+        # This darkening will trigger whether this is a fresh hit on this node or if
+        # we roll to visit an invalid direction, which also counts as a hit on the current node.
+        if node[current_node][7] >= 8:
+            node[current_node][7] -= 8
+            draw_circle(node[current_node][5], node[current_node][6], "red", 1)
+
+        next_node = findAdjacentNode(current_node)
+
+    # When this point is reached, a valid adjacent node has been found. Visit it.
+    visitNode(next_node)
+    # remove the red circle from the last node visited
+    draw_circle(node[last_node][5], node[last_node][6], "black", 0)
+    # draw the red circle on the new to to indicate the move, and fill it to indicate it's been visited
+    draw_circle(node[current_node][5], node[current_node][6], "red", 1)
+
+# When this point is reached, this game has ended. Indicate the game has ended
+myTurtle.setposition(110, 0)
+myTurtle.color("green")
+myTurtle.write("Game Complete!", font=("Arial", 18, "bold"))
+myTurtle.setposition(105, -30)
+myTurtle.color("green")
+myTurtle.write("Close window to continue...", font=("Arial", 12, "bold"))
+
+# print statistics
+myTurtle.setposition(-100, -180)
+myTurtle.color("black")
+output_str = "Total Moves: " + str(move_count)
+myTurtle.write(output_str, font=("Arial", 13, "normal"))
+myTurtle.setposition(-100, -200)
+myTurtle.color("black")
+avg = (float)(move_count / num_nodes)
+output_str = "Average Hits per Node: " + (str)("%.02f" % avg)
+myTurtle.write(output_str, font=("Arial", 13, "normal"))
+myTurtle.setposition(-100, -220)
+myTurtle.color("black")
+# find maximum number of hits on any single node
+x = 1 #  iterator
+max_hits = 0
+while x <= num_nodes:
+    # update max node if current node has more than previous max
+    if node[x][0] > max_hits:
+        max_hits = node[x][0]
+    x += 1
+output_str = "Maximum Hits on a Node: " + (str)(max_hits)
+myTurtle.write(output_str, font=("Arial", 13, "normal"))
+
+# move cursor off-screen and wait for user input before closing the game display
+turtle.penup()
+turtle.setposition(-900, 900)
+turtle.getscreen()._root.mainloop()
+
+#clear the stats and node list for the next round of input-defined simulations
+node = [[]]
+num_nodes = 0
+next_node = 0
+current_node = 0
+move_count = 0
+
+###  END PYRAMID DISPLAY SECTION  ###
+
+### BEGIN NEXT SET OF SIMULATIONS WITHOUT GRAPHICS ###
+
+# open input file as read-only and save to list
+input_file = open("HWinfile.txt", "r")
+input_text = input_file.readlines()
+input_file.close()
+
+print("\nRunning 4 groups of simulations based on input file...", end="")
+
+# Main loop for the 4 groups of simulations
+for group in range(1, 5):
+    # grab input and cast to ints
+    num_levels = (int)(input_text[group-1].split(" ", 1)[0])
+    num_sims = (int)(input_text[group-1].split(" ", 1)[1])
+    # save input info for final output
+    L[group] = num_levels
+    T[group] = num_sims
+    # build the pyramid based on number of levels input from file
+    build_pyramid(num_levels)
+    # loop for this set of simulations
+    for sim in range(1, num_sims+1):
+        game_number += 1
+        # start the game by visiting node 1
+        next_node = 1
+        visitNode(next_node)
+        # Main loop for each simulated game. Check if the game has ended at the start.
+        while not(gameOver(num_nodes)):
+            # set next_node to zero in order to enter the while loop
+            next_node = 0
+            # keep trying to roll for a valid adjacent node to visit until one is found
+            while (next_node == 0):
+                next_node = findAdjacentNode(current_node)
+
+            # When this point is reached, a valid adjacent node has been found. Visit it.
+            visitNode(next_node)
+
+        # When this point is reached, this game has ended.
+        # Store and display statistics for this run, and reset globals for the next run
+        compile_game_stats()
+        current_node = 0
+        move_count = 0
+        next_node = 0
+        for x in range(1, num_nodes+1):
+            node[x][0] = 0  # reset hit counts for each node
+
+    # Compile and store the stats for this group
+    total_moves = 0
+    for x in range(0, num_sims):
+        total_moves += totals_move_count[x]
+    M[group] = (float)(total_moves / num_sims)  # store total avg moves for this group of simulations
+
+    max_hits = 0
+    for x in range(0, num_sims):
+        if totals_max_hits[x] > max_hits:
+            max_hits = totals_max_hits[x]
+    D[group] = max_hits  # store the max hits on any single node across this group of simulations
+
+    # reset stats and game number for next group for simulations
+    reset_stats()
+    game_number = 0
+
+# when this point is reached, the specified number of game simulations has ended.
+# Report total stats and exit.
+print(" Done!\n")
+report_total_stats()
+exit()
